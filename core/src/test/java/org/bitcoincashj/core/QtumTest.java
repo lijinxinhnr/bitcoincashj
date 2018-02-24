@@ -128,7 +128,7 @@ public class QtumTest {
         Sha256Hash hash = tx.hashForSignatureBtc(0, scriptPubKey, Transaction.SigHash.ALL, false);
         ECKey.ECDSASignature sig = ecKey.sign(hash);
 
-        TransactionSignature signature = new TransactionSignature(sig, Transaction.SigHash.ALL, false, true);
+        TransactionSignature signature = new TransactionSignature(sig, Transaction.SigHash.ALL, false);
         Script scriptSig = ScriptBuilder.createInputScript(signature, ecKey);
         tx.getInput(0).setScriptSig(scriptSig);
 
