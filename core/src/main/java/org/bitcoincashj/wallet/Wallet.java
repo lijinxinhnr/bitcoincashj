@@ -3733,7 +3733,7 @@ public class Wallet extends BaseTaggableObject
      * and lets you see the proposed transaction before anything is done with it.</p>
      *
      * <p>This is a helper method that is equivalent to using {@link SendRequest#to(Address, Coin)}
-     * followed by {@link Wallet#completeTx(Wallet.SendRequest)} and returning the requests transaction object.
+     * followed by {@link Wallet#completeTx(SendRequest)} and returning the requests transaction object.
      * Note that this means a fee may be automatically added if required, if you want more control over the process,
      * just do those two steps yourself.</p>
      *
@@ -3766,7 +3766,7 @@ public class Wallet extends BaseTaggableObject
      * Sends coins to the given address but does not broadcast the resulting pending transaction. It is still stored
      * in the wallet, so when the wallet is added to a {@link PeerGroup} or {@link Peer} the transaction will be
      * announced to the network. The given {@link SendRequest} is completed first using
-     * {@link Wallet#completeTx(Wallet.SendRequest)} to make it valid.
+     * {@link Wallet#completeTx(SendRequest)} to make it valid.
      *
      * @return the Transaction that was created
      * @throws InsufficientMoneyException if the request could not be completed due to not enough balance.
@@ -3818,6 +3818,14 @@ public class Wallet extends BaseTaggableObject
         return sendCoins(broadcaster, request);
     }
 
+    public Transaction sendToken(Address changeBack,Address to, String amount, byte[] contractAddress, long gasLimit, long gasPrice) throws InsufficientMoneyException {
+        byte[] transferAmount = Utils.bigIntegerToBytes(new BigInteger(amount, 10), 32);
+        byte[] dataHex = Utils.parseAsHexOrBase58("a9059cbb"
+                + "000000000000000000000000"+ Utils.HEX.encode(to.getHash160())
+                + Utils.HEX.encode(transferAmount));
+        SendRequest request = SendRequest.tokenTransfer(changeBack,contractAddress,dataHex,gasLimit,gasPrice);
+        return getTokenTx(request);
+    }
     /**
      * <p>Sends coins according to the given request, via the given {@link TransactionBroadcaster}.</p>
      *
@@ -3857,6 +3865,9 @@ public class Wallet extends BaseTaggableObject
         result.broadcast = broadcaster.broadcastTransaction(tx);
         result.broadcastComplete = result.broadcast.future();
         return result;
+    }
+    public Transaction getTokenTx(SendRequest request) throws InsufficientMoneyException {
+        return sendCoinsOffline(request);
     }
 
     /**
@@ -4844,7 +4855,8 @@ public class Wallet extends BaseTaggableObject
                                        boolean needAtLeastReferenceFee, List<TransactionOutput> candidates) throws InsufficientMoneyException {
         checkState(lock.isHeldByCurrentThread());
         FeeCalculation result;
-        Coin fee = Coin.ZERO;
+        Coin fee = Coin.valueOf(req.gasLimit * req.gasPrice);
+
         while (true) {
             result = new FeeCalculation();
             Transaction tx = new Transaction(params);

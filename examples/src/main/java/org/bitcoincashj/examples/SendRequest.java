@@ -21,7 +21,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import org.bitcoincashj.core.*;
 import org.bitcoincashj.kits.WalletAppKit;
-import org.bitcoincashj.params.TestNet3Params;
+import org.bitcoincashj.params.QtumMainNetParams;
 import org.bitcoincashj.wallet.Wallet;
 import org.bitcoincashj.wallet.Wallet.BalanceType;
 
@@ -35,8 +35,9 @@ public class SendRequest {
     public static void main(String[] args) throws Exception {
 
         // We use the WalletAppKit that handles all the boilerplate for us. Have a look at the Kit.java example for more details.
-        NetworkParameters params = TestNet3Params.get();
+        NetworkParameters params = QtumMainNetParams.get();
         WalletAppKit kit = new WalletAppKit(params, new File("."), "sendrequest-example");
+        kit.connectToLocalHost();
         kit.startAsync();
         kit.awaitRunning();
 
@@ -58,6 +59,7 @@ public class SendRequest {
         // When using the testnet you can use a faucet (like the http://faucet.xeno-genesis.com/) to get testnet coins.
         // In this example we catch the InsufficientMoneyException and register a BalanceFuture callback that runs once the wallet has enough balance.
         try {
+            //kit.wallet().sendToken()
             Wallet.SendResult result = kit.wallet().sendCoins(kit.peerGroup(), to, value);
             System.out.println("coins sent. transaction hash: " + result.tx.getHashAsString());
             // you can use a block explorer like https://www.biteasy.com/ to inspect the transaction with the printed transaction hash. 

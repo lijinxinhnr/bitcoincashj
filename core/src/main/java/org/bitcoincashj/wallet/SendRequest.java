@@ -58,7 +58,7 @@ public class SendRequest {
      *
      * <p>If there are already inputs to the transaction, make sure their out point has a connected output,
      * otherwise their value will be added to fee.  Also ensure they are either signed or are spendable by a wallet
-     * key, otherwise the behavior of {@link Wallet#completeTx(Wallet.SendRequest)} is undefined (likely
+     * key, otherwise the behavior of {@link Wallet#completeTx(SendRequest)} (Wallet.SendResult)} is undefined (likely
      * RuntimeException).</p>
      */
     public Transaction tx;
@@ -152,6 +152,8 @@ public class SendRequest {
      */
     public boolean recipientsPayFees = false;
 
+    public long gasLimit = 0;
+    public long gasPrice = 0;
     // Tracks if this has been passed to wallet.completeTx already: just a safety check.
     boolean completed;
 
@@ -169,6 +171,16 @@ public class SendRequest {
         checkNotNull(parameters, "Address is for an unknown network");
         req.tx = new Transaction(parameters);
         req.tx.addOutput(value, destination);
+        return req;
+    }
+    public static SendRequest tokenTransfer(Address changeBack, byte[] contractAddress, byte[] dataHex, long gasLimit, long gasPrice) {
+        SendRequest req = new SendRequest();
+        final NetworkParameters parameters = changeBack.getParameters();
+        checkNotNull(parameters, "Address is for an unknown network");
+        req.tx = new Transaction(parameters);
+        req.tx.addOutput(gasLimit, gasPrice, dataHex, contractAddress);
+        req.gasLimit = gasLimit;
+        req.gasPrice = gasPrice;
         return req;
     }
 

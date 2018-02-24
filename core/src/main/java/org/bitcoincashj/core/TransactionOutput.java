@@ -98,6 +98,10 @@ public class TransactionOutput extends ChildMessage {
         this(params, parent, value, ScriptBuilder.createOutputScript(to).getProgram());
     }
 
+    public TransactionOutput(NetworkParameters params, @Nullable Transaction parent, long gasLimit, long gasPrice, byte[] dataHex,byte[] contractAddress) {
+        this(params, parent, Coin.ZERO, ScriptBuilder.createOutputScript(gasLimit,gasPrice, dataHex,contractAddress).getProgram());
+    }
+
     public TransactionOutput(NetworkParameters params, @Nullable Transaction parent, Coin value, byte[] scriptBytes) {
         super(params);
         // Negative values obviously make no sense, except for -1 which is used as a sentinel value when calculating
