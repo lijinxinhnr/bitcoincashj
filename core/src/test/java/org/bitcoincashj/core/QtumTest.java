@@ -85,13 +85,15 @@ public class QtumTest {
         //priKey
         String privateKey = "KzzAeiUESLWEXcf5GV1vAfk6rKTacR88BHVQnzuQuLk2h4dLXhhd";
         //token transfer amount
-        String amount = "23138600000";
+        String amount = "23128600000"; //23.1286
         //odd change output
-        Coin changeOutput = Coin.valueOf(0, 99);
+        Coin changeOutput = Coin.valueOf(69769000); //0.69769
         //contract address
         byte[] contractAddress = Utils.HEX.decode("fe59cbc1704e89a698571413a81f0de9d8f00c69"); //INK
         // utxo
-        String utxoStr = "c3d8c742bccfc40161bcd4288727d5b77ce653aa483c89ad9090f95c844c89ed";
+        String utxoStr = "3597e2f690180847833eb069053d65aaec202de6f2139a5061aa93a68a9a2d43";
+        // toAddress
+        String toAddress = "QSVy7wGCN65kkWxxAkMipmTYeHNkUF9UZP";
         int utxoOutput = 0;
 
         //************ process key & address
@@ -110,16 +112,17 @@ public class QtumTest {
         tx.addInput(new Sha256Hash(utxoStr), utxoOutput, scriptPubKey);
         //************ tx output:token transfer [0]
 
+        Address destAddress = Address.fromBase58(PARAMS, toAddress);
+
         byte[] transferAmount = Utils.bigIntegerToBytes(new BigInteger(amount, 10), 32);
         byte[] dataHex = Utils.parseAsHexOrBase58("a9059cbb"
-                + "000000000000000000000000"+ Utils.HEX.encode(address.getHash160())
+                + "000000000000000000000000"+ Utils.HEX.encode(destAddress.getHash160())
                 + Utils.HEX.encode(transferAmount));
 
-        tx.addOutput(2500000, 40, dataHex, contractAddress);
+        tx.addOutput(250000, 40, dataHex, contractAddress);
 
         //************ tx output: value - gasprice * gaslimit - fee [1]
-        Address destAddress = Address.fromBase58(PARAMS, "QSVy7wGCN65kkWxxAkMipmTYeHNkUF9UZP");
-        tx.addOutput(changeOutput, destAddress);
+        tx.addOutput(changeOutput, address);
 
         //************ sign tx
         Sha256Hash hash = tx.hashForSignatureBtc(0, scriptPubKey, Transaction.SigHash.ALL, false);
