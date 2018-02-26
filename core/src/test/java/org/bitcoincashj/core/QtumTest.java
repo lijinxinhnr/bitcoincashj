@@ -78,23 +78,23 @@ public class QtumTest {
         // TODO: This will fail. org.bitcoincashj.script.Script.executeMultiSig() should be updated
         // tx.getInput(0).verify(output);
     }
-*/
-    @Test
+
+    //@Test
     public void testP2PKHSign() {
         //************ params & inputs
         //priKey
         String privateKey = "KzzAeiUESLWEXcf5GV1vAfk6rKTacR88BHVQnzuQuLk2h4dLXhhd";
         //token transfer amount
-        String amount = "23128600000"; //23.1286
+        String amount = "13128600000"; //23.1286
         //odd change output
-        Coin changeOutput = Coin.valueOf(69769000); //0.69769
+        Coin changeOutput = Coin.valueOf(58769000); //0.69769
         //contract address
         byte[] contractAddress = Utils.HEX.decode("fe59cbc1704e89a698571413a81f0de9d8f00c69"); //INK
         // utxo
-        String utxoStr = "3597e2f690180847833eb069053d65aaec202de6f2139a5061aa93a68a9a2d43";
+        String utxoStr = "01df83f210612016ca522381b0a3f0c5d7a1fcd0a72c7dcb4f976b5712e7351e";
         // toAddress
-        String toAddress = "QSVy7wGCN65kkWxxAkMipmTYeHNkUF9UZP";
-        int utxoOutput = 0;
+        String toAddress = "QV8c54DVkT4ZqLPb5bYWrixXaJPZzZDjrH";
+        int utxoOutput = 1;
 
         //************ process key & address
 
@@ -132,6 +132,81 @@ public class QtumTest {
         Script scriptSig = ScriptBuilder.createInputScript(signature, ecKey);
         tx.getInput(0).setScriptSig(scriptSig);
 
+        System.out.println(Utils.HEX.encode(tx.bitcoinSerialize()));
+    }
+
+    class UTXOItem {
+        UTXOItem(String priKey, String utxoStr, int index) {
+            this.privateKey = priKey;
+            this.utxoStr = utxoStr;
+            this.utxoIdx = index;
+            DumpedPrivateKey dumpedPrivateKey = DumpedPrivateKey.fromBase58(PARAMS, this.privateKey);
+            this.ecKey = dumpedPrivateKey.getKey();
+            this.address = ecKey.toAddress(PARAMS);
+        }
+        Address address;
+        String privateKey;
+        String utxoStr;
+        int utxoIdx;
+        ECKey ecKey;
+    }
+    @Test
+    public void testMVIO() {
+        UTXOItem item1 = new UTXOItem("KzzAeiUESLWEXcf5GV1vAfk6rKTacR88BHVQnzuQuLk2h4dLXhhd", "49c3257d1237fc95113c7056b4c95ffbb8242ea32f0cc8618e269b22c63d138a", 1);
+  //      UTXOItem item2 = new UTXOItem("KzzAeiUESLWEXcf5GV1vAfk6rKTacR88BHVQnzuQuLk2h4dLXhhd", "61e9a62bf8f11776a6831e47a69a4d80676f8afa4e32b7ee577315f8da9bbe97", 12);
+        UTXOItem item3 = new UTXOItem("L2whmpdrbBVTmyTHmnVxYfGCH62Y3nYTdZk9fYUs5kZEQP5xZoUJ", "6c7f1adec913aba1d06dbadd1e23d90f69dffbcfe8972f34ef8192996df50ff2", 1);
+        List<UTXOItem> UTXOs = new ArrayList<>();
+        List<Script> scripts = new ArrayList<>();
+        UTXOs.add(item1);
+        UTXOs.add(item3);
+        //UTXOs.add(item3);
+        //************ params & inputs
+        // toAddress
+        String toAddress = "QV8c54DVkT4ZqLPb5bYWrixXaJPZzZDjrH";
+        // changeAddress
+        String changeAddress = "QSVy7wGCN65kkWxxAkMipmTYeHNkUF9UZP";
+        //token amount
+        String amount = "10000000000"; //10.00000
+        //odd change output
+        Coin changeAmount = Coin.valueOf(133883000); //1.33883
+        //contract address
+        byte[] contractAddress = Utils.HEX.decode("fe59cbc1704e89a698571413a81f0de9d8f00c69"); //INK
+
+
+        Transaction tx = new Transaction(PARAMS);
+        tx.setVersion(1);
+
+        //************ tx input
+        for(int i = 0; i < UTXOs.size(); i++) {
+            UTXOItem item = UTXOs.get(i);
+            Script scriptPubKey = ScriptBuilder.createOutputScript(item.address);
+            tx.addInput(new Sha256Hash(item.utxoStr),item.utxoIdx, scriptPubKey);
+            scripts.add(scriptPubKey);
+        }
+
+        //************ tx output:token transfer [0]
+
+        Address destAddress = Address.fromBase58(PARAMS, toAddress);
+
+        byte[] transferAmount = Utils.bigIntegerToBytes(new BigInteger(amount, 10), 32);
+        byte[] dataHex = Utils.parseAsHexOrBase58("a9059cbb"
+                + "000000000000000000000000"+ Utils.HEX.encode(destAddress.getHash160())
+                + Utils.HEX.encode(transferAmount));
+        tx.addOutput(250000, 40, dataHex, contractAddress);
+        //************ tx output: value - gasprice * gaslimit - fee [1]
+        tx.addOutput(changeAmount, Address.fromBase58(PARAMS,changeAddress));
+
+        //************ sign tx
+        int numInputs = tx.getInputs().size();
+        for(int i = 0; i < numInputs; i++) {
+            UTXOItem item = UTXOs.get(i);
+            Script scriptPubKey = scripts.get(i);
+            Sha256Hash hash = tx.hashForSignatureBtc(i, scriptPubKey, Transaction.SigHash.ALL, false);
+            ECKey.ECDSASignature sig = item.ecKey.sign(hash);
+            TransactionSignature signature = new TransactionSignature(sig, Transaction.SigHash.ALL, false);
+            Script scriptSig = ScriptBuilder.createInputScript(signature, item.ecKey);
+            tx.getInput(i).setScriptSig(scriptSig);
+        }
         System.out.println(Utils.HEX.encode(tx.bitcoinSerialize()));
     }
 }
