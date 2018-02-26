@@ -78,7 +78,7 @@ public class QtumTest {
         // TODO: This will fail. org.bitcoincashj.script.Script.executeMultiSig() should be updated
         // tx.getInput(0).verify(output);
     }
-
+*/
     //@Test
     public void testP2PKHSign() {
         //************ params & inputs
